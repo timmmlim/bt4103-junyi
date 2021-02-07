@@ -10,3 +10,6 @@ data/
 # Jupyter Notebook
 .ipynb_checkpoints
 
+# Images generated
+*.png
+*.jpg
