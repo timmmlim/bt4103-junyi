@@ -14,6 +14,9 @@ import time
 
 
 def timer(func):
+    """
+    Some helper function to time the run time.
+    """
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         start_time = time.perf_counter()
@@ -27,8 +30,12 @@ def timer(func):
 
 
 class bt4103Clustering:
+    """
+    Created some class to handle clustering.(just trying out)
+    First column in the unique id
+    """
     def __init__(self, data):
-        self.unique_id = data.iloc[:, 0:1]
+        self.unique_id = data.iloc[:, 0:1] 
         self.data = data.iloc[:, 1:]
         self.inputs = None
         self.seed = 4103
@@ -39,11 +46,27 @@ class bt4103Clustering:
         self.max_score = -1
 
     def create_algo_input(self, inputs):
+        """
+        Create custom inputs.
+        Must be a list of tuple : (sklearn model, parameter, (parameter_to_change, range))
+        
+        Eg.
+          input = [(KMeans, {'random_state':seed}, ('n_clusters', k_range)),
+          (GaussianMixture, {'random_state':seed}, ('n_components', k_range)),
+         (MeanShift, {'bin_seeding':True}, ('bandwidth', k_range)), 
+         (AgglomerativeClustering, {}, ('n_clusters', k_range)),
+         (DBSCAN, {'n_jobs':-1}, ('eps', np.linspace(0.2,0.8,len(k_range)))),
+         (OPTICS, {'metric':'cosine'}, ('min_samples', np.arange(2,8))),
+         (Birch, {}, ('n_clusters', k_range)),]
+        """
         self.inputs = inputs
         self.n_trials = len(inputs[0][2][1])
         return "Custom input has been created."
 
     def update_best_model(self, silhouette_scores, model_per_k):
+        """
+        Store the best model determined by the highest silhouette score.
+        """
         if max(silhouette_scores) > self.max_score:
             self.max_score = max(silhouette_scores)
             self.best_model = model_per_k[np.argmax(silhouette_scores)]
@@ -51,32 +74,39 @@ class bt4103Clustering:
 
     @timer
     def clustering_preprocessing(self, n_components=None):
-        preprocessor = bt4103Preprocessor(self.data)
-        self.data = preprocessor.scale_numerical_data()
-        pca_data = preprocessor.perform_pca(n_components=n_components)
-        preprocessor.pca_result()
-        self.preprocessor = preprocessor
-        self.data = preprocessor.pca_data
+        """
+        Perform standard scalar, and then perform pca. 
+        Changes the data into PCA-ed data as well.
+        """
+        self.preprocessor = bt4103Preprocessor(self.data)
+        pca_data = self.preprocessor.perform_pca(n_components=n_components)
+        self.preprocessor.pca_result()
+        self.data = self.preprocessor.pca_data
         return 
 
     def initialize_algo_inputs(self, k_range):
         """
         Initializes a DEFAULT list of of tuple (sklearn model, custom_parameters, hyperparameters for each of the k trials)
-        # https://scikit-learn.org/stable/modules/generated/sklearn.cluster.MeanShift.html#sklearn.cluster.MeanShift
-        # https://scikit-learn.org/stable/modules/generated/sklearn.mixture.GaussianMixture.html#sklearn.mixture.GaussianMixture
-        # https://scikit-learn.org/stable/modules/generated/sklearn.cluster.AffinityPropagation.html#sklearn.cluster.AffinityPropagation
-        # https://scikit-learn.org/stable/modules/generated/sklearn.cluster.AgglomerativeClustering.html
-        # https://scikit-learn.org/stable/modules/generated/sklearn.cluster.SpectralClustering.html#sklearn.cluster.SpectralClustering
-        # https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html#sklearn.cluster.DBSCAN
-        # https://scikit-learn.org/stable/modules/generated/sklearn.cluster.OPTICS.html#sklearn.cluster.OPTICS
-        # https://scikit-learn.org/stable/modules/generated/sklearn.cluster.Birch.html#sklearn.cluster.Birch
+        
+        More info:
+        https://scikit-learn.org/stable/modules/generated/sklearn.cluster.MeanShift.html#sklearn.cluster.MeanShift
+        https://scikit-learn.org/stable/modules/generated/sklearn.mixture.GaussianMixture.html#sklearn.mixture.GaussianMixture
+        https://scikit-learn.org/stable/modules/generated/sklearn.cluster.AffinityPropagation.html#sklearn.cluster.AffinityPropagation
+        https://scikit-learn.org/stable/modules/generated/sklearn.cluster.AgglomerativeClustering.html
+        https://scikit-learn.org/stable/modules/generated/sklearn.cluster.SpectralClustering.html#sklearn.cluster.SpectralClustering
+        https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html#sklearn.cluster.DBSCAN
+        https://scikit-learn.org/stable/modules/generated/sklearn.cluster.OPTICS.html#sklearn.cluster.OPTICS
+        https://scikit-learn.org/stable/modules/generated/sklearn.cluster.Birch.html#sklearn.cluster.Birch
         """
         if k_range is None:
             self.k_range = np.arange(2, 8)
         else:
             self.k_range = k_range
         self.n_trials = len(self.k_range)
-        # tuple of the model and the corresponding model parameters, as well as the range of parameters that you want to try in the same number of trials
+        
+        # tuple of the model and the corresponding model parameters,
+        # as well as the range of parameters that you want to try in the same number of trials.
+        # Currently a lot of the methods here take too long to run / have errors LOL
         self.inputs = [(KMeans, {'random_state': self.seed}, ('n_clusters', k_range)),
                       (GaussianMixture, {
                        'random_state': self.seed}, ('n_components', k_range)),
@@ -90,14 +120,19 @@ class bt4103Clustering:
                       # (AffinityPropagation, {'random_state':self.seed}, ()),
                       #  (SpectralClustering, {'random_state':self.seed}, ('n_clusters', k_range)),
                       ]
-
         return 'Default input initialized.'
 
     def update_params(self, params, hp, k):
+        """
+        Some helper to update my input parameter, not important
+        """
         params[hp] = k
         return params
 
     def get_model_per_k(self, clustering_model, params, n_trials_hp):
+        """
+        Obtain a list of sklearn models with the different parameters to try in each trial.
+        """
         # if there is a parameter to update in each of the trials:
         if len(n_trials_hp) > 1:
             # for some reason need to cast the type to int for Birch
@@ -114,6 +149,9 @@ class bt4103Clustering:
             return model_per_k
 
     def get_silhouette_list_scores(self, model_per_k):
+        """
+        Obtain a list of the silhouette score for the list of sklearn models obtained from model_per_k.
+        """
         if model_per_k[0].__class__.__name__ == 'GaussianMixture':
             preds = [model.predict(self.data) for model in model_per_k]
             try:
@@ -135,6 +173,9 @@ class bt4103Clustering:
         return silhouette_scores
 
     def get_best_model_labels(self, clustering_model, model_per_k, silhouette_scores, n_trials_hp):
+        """
+        Get the best model as well as the model output labels after trying out all the different parameters
+        """
         # if there is a parameter to update in each of the trials
         if len(n_trials_hp) > 1:
             best_k = n_trials_hp[1][np.argmax(silhouette_scores)]
@@ -158,6 +199,12 @@ class bt4103Clustering:
 
     @timer
     def run_clustering(self, clustering_model, model_params, n_trials_hp):
+        """
+        Runs the clustering process for a single model.
+        1.  Create a list of sklearn models.
+        2.  Create the corresponding silhouette score
+        3.  Obtain the best model parameter and label
+        """
         model_per_k = self.get_model_per_k(
             clustering_model, model_params, n_trials_hp)
         # if n_trials_hp does not affect the number of parameter, increase it to fit into the final resulting dataframe.
@@ -178,9 +225,20 @@ class bt4103Clustering:
         for model, param in inputs:
             param['n_clusters'] = current_k
         return inputs
+   
 
     @timer
     def run_clustering_pipeline(self):
+        """
+        1. Create dataframe to store all the scores from the different trials
+        2. Create dataframe to store the results from the best trial using each sklearn model
+        3. Store the score for use later
+        """
+        if self.preprocessor is None:
+            # if no preprocessor, means that the data is not scaled yet
+            self.preprocessor = bt4103Preprocessor(self.data)
+            self.data = self.preprocessor.scale_numerical_data(self.data)
+            
         new_clustering_scores = pd.DataFrame()
         new_clustering_groups = pd.DataFrame()
         for model, params, n_trials_hp in self.inputs:
@@ -200,6 +258,9 @@ class bt4103Clustering:
         return self.clustering_scores, self.clustering_groups
 
     def silhouette_analysis(self):
+        """
+        Calcualte the silhouette score to determine the number of clusters
+        """
         fig, ax = plt.subplots(figsize=(16, 8))
         for models in map(lambda x: x[0], self.inputs):
             ax.plot(np.arange(len(self.clustering_scores[models.__name__+'_hparams'])),
