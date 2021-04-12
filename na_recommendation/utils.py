@@ -320,7 +320,6 @@ def convert_edge_weights_for_dijstra(G, method='number_of_individual_students'):
 def preprocess_edge_weights(G, method):
   if method == 'shortest_path':
     # if shortest path, we do not need to change the edge weights, default it will be one anyway.
-    G = convert_edge_weights_for_dijstra(G, method)
     return G
   else:
     # if it is popularity or student performance, we need to negate these edge weights and make them positive edges
