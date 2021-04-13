@@ -15,7 +15,7 @@ Describes the network analysis used to predict the the learning path for each of
 
 - "na_recommendation" is the folder that contains the scripts used in this notebook to evaluate the network from the individual student clusters as well as the implementation of the learning path algorithm.
 
-# Recommending learning path example
+# Example of the execution to generate learning paths
 - 'Log_Problem.csv' is a csv from [Junyi Academy](https://www.kaggle.com/junyiacademy/learning-activity-public-dataset-by-junyi-academy)
 - 'Info_Content.csv'is a csv from [Junyi Academy](https://www.kaggle.com/junyiacademy/learning-activity-public-dataset-by-junyi-academy)
 - "level4_id" is the description on the exercises from [Junyi Academy](https://www.kaggle.com/junyiacademy/learning-activity-public-dataset-by-junyi-academy)
@@ -24,7 +24,6 @@ Describes the network analysis used to predict the the learning path for each of
 
 ```python
 from na_recommendation import utils as utils
-# Declare inputs to the function
 log_problem = pd.read_csv('Log_Problem.csv')
 info_content = pd.read_csv('Info_Content.csv')
 level4_ids = info_content['level4_id'].unique()
@@ -32,5 +31,5 @@ types = ['number_of_individual_students', 'final_average_performance', 'shortest
 selected_type = types[0]
 
 # Generate the learning paths
-result, G = utils.recommend_learning_paths(log_problem_sub, info_content, level4_ids, method = selected_type)
+result, G = utils.recommend_learning_paths(log_problem, info_content, level4_ids, method = selected_type)
 paths = res['paths']
